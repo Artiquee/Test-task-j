@@ -22,13 +22,10 @@ driver = webdriver.Chrome(options=options)
 
 def single_page_data():
     driver.implicitly_wait(2)
+    price = get_price()
     title = driver.find_element(By.XPATH, '//*[@data-id="PageTitle"]').text
-    price = driver.find_elements(By.CLASS_NAME, 'text-nowrap')[1].text
-    price = price.split('/')[0]
-    price = int(price[1:].replace(',', ''))
-    full_address = driver.find_element(By.CLASS_NAME, 'pt-1').text
-    address = ','.join(full_address.split(',')[:2])
-    region = ','.join(full_address.split(',')[1:])
+    address, region = get_address_and_region()
+    rooms = get_rooms()
     try:
         description = driver.find_element(By.XPATH, '//*[@itemprop="description"]').text
     except:
@@ -37,18 +34,6 @@ def single_page_data():
         return window.MosaicPhotoUrls;
     """)
     date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    try:
-        bedrooms = driver.find_element(By.CSS_SELECTOR, 'div.col-lg-3.col-sm-6.cac').text[0]
-    except:
-        logger.error(f'NO BEDROOMS {driver.current_url}')
-        bedrooms = 0
-
-    try:
-        bathrooms = driver.find_element(By.CSS_SELECTOR, 'div.col-lg-3.col-sm-6.sdb').text[0]
-    except:
-        logger.error(f'NO BATHROOMS {driver.current_url}')
-        bathrooms = 0
-    rooms = int(bedrooms) + int(bathrooms)
     area = driver.find_element(By.CLASS_NAME, 'carac-value').text
     return {
         "link": driver.current_url,
@@ -65,6 +50,7 @@ def single_page_data():
 
 
 def get_first_page():
+    """GET FIRST URL FROM ALL AVAILABLE"""
     first_items = driver.find_elements(By.CSS_SELECTOR, 'a.property-thumbnail-summary-link')
     driver.get(first_items[0].get_attribute("href"))
     time.sleep(1)
@@ -73,6 +59,36 @@ def get_first_page():
         return
     else:
         driver.find_element(By.CLASS_NAME, 'goFirst').click()
+
+
+def get_price() -> int:
+    price = driver.find_elements(By.CLASS_NAME, 'text-nowrap')[1].text
+    price = price.split('/')[0]
+    price = int(price[1:].replace(',', ''))
+    return price
+
+
+def get_address_and_region():
+    full_address = driver.find_element(By.CLASS_NAME, 'pt-1').text
+    address = ','.join(full_address.split(',')[:2])
+    region = ','.join(full_address.split(',')[1:])
+    return address, region
+
+
+def get_rooms() -> int:
+    try:
+        bedrooms = driver.find_element(By.CSS_SELECTOR, 'div.col-lg-3.col-sm-6.cac').text[0]
+    except:
+        logger.error(f'NO BEDROOMS {driver.current_url}')
+        bedrooms = 0
+
+    try:
+        bathrooms = driver.find_element(By.CSS_SELECTOR, 'div.col-lg-3.col-sm-6.sdb').text[0]
+    except:
+        logger.error(f'NO BATHROOMS {driver.current_url}')
+        bathrooms = 0
+    rooms = int(bedrooms) + int(bathrooms)
+    return rooms
 
 
 def main() -> list:
